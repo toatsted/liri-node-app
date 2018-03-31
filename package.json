@@ -19,6 +19,7 @@
   "homepage": "https://github.com/toatsted/liri-node-app#readme",
   "dependencies": {
     "dotenv": "^5.0.1",
+    "fs-extra": "^5.0.0",
     "node-spotify-api": "^1.0.7",
     "request-promise": "^4.2.2",
     "twitter": "^1.7.1"
