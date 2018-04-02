@@ -1,5 +1,4 @@
 require("dotenv").config();
-
 let keys = require("./keys.js");
 let request = require("request-promise");
 let Twitter = require("twitter");
@@ -7,6 +6,22 @@ let Spotify = require("node-spotify-api");
 let fs = require("fs-extra");
 let inquirer = require("inquirer");
 let opn = require("opn");
+
+function getTweets(){
+	let twitter = new Twitter(keys.twitter);
+
+	let params = {
+		screen_name: "yesandbutno",
+		count: 20,
+	}
+	twitter.get("statuses/user_timeline", params)
+		.then(tweets => {
+			tweets.forEach(value => {
+				console.log(value.created_at + "\n" + value.text + "\n");
+			})
+		})
+		.catch(err => console.log(err))
+}
 
 function searchMovie(name) {
 	let end = [];
@@ -52,10 +67,7 @@ function searchSong(name) {
 						type: "confirm",
 						message: "Open preview?"
 					}])
-					.then(confirm => {
-						if (confirm.preview)
-							opn(song.preview_url)
-					})
+					.then(confirm => {if (confirm.preview) opn(song.preview_url)})
 					.catch(err => console.log(err))
 			}
 		})
@@ -76,6 +88,7 @@ if (process.argv.length > 2) {
 			break;
 		case "my-tweets":
 		case "-t":
+			getTweets();
 			break;
 		case "spotify-this-song":
 		case "-s":
@@ -111,6 +124,7 @@ if (process.argv.length > 2) {
 				response.mainArg === "my-tweets") {
 				switch (response.mainArg) {
 					case "my-tweets":
+						getTweets();
 						break;
 
 					case "do-what-it-says":
