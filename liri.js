@@ -5,36 +5,36 @@ let request = require("request-promise");
 let Twitter = require("twitter");
 let Spotify = require("node-spotify-api");
 let fs = require("fs-extra");
+let inquirer = require("inquirer");
+let opn = require("opn");
 
-let mainArg = process.argv[2];
-let args = process.argv.slice(3);
-
-function searchMovie(name){
+function searchMovie(name) {
+	let end = [];
 	request(`http://www.omdbapi.com/?apikey=trilogy&t=${name}`)
 		.then(response => {
 			response = JSON.parse(response);
-			for(let key in response){
-				if(["Title", "Year", "Country", "Language", "Plot", "Actors"]
-					.indexOf(key) > -1){
-					console.log(`${key} : ${response[key]}`);
-				}
-				else if(key === "Ratings"){
+			for (let key in response) {
+				if (["Title", "Year", "Country", "Language", "Plot", "Actors"]
+					.indexOf(key) > -1) {
+					end.push(`${key} : ${response[key]}`);
+				} else if (key === "Ratings") {
 					response[key].forEach(value => {
-						if(value.Source === "Rotten Tomatoes")
-							console.log(`${value.Source} Rating : ${value.Value}`);
+						if (value.Source === "Rotten Tomatoes")
+							end.push(`${value.Source} Rating : ${value.Value}`);
 					})
-				}
-				else if(key === "imdbRating")
-					console.log(`IMDB Rating : ${response[key]}`)
-			}
+				} else if (key === "imdbRating")
+					end.push(`IMDB Rating : ${response[key]}`)
 
+			}
+			console.log(end.join("\n"));
 		})
 		.catch(err => console.log(err));
 }
 
-function searchSong(name){
+function searchSong(name) {
 	let spotify = new Spotify(keys.spotify);
-	 
+	let end = [];
+
 	spotify.search({ type: 'track', query: name })
 		.then(data => {
 			let song = data.tracks.items[0];
@@ -42,45 +42,103 @@ function searchSong(name){
 			let artists = [];
 			song.artists.forEach(value => artists.push(value.name));
 
-			console.log(`Name : ${song.name}`);
-			console.log(`Album : ${song.album.name}`);
-			console.log(`Artists : ${artists.join(", ")}`);
-			console.log((song.preview_url === null) ? "" : `Preview : ${song.preview_url}`);
-
+			end.push(`Search: ${song.name}`);
+			end.push(`Album : ${song.album.name}`);
+			end.push(`Artists : ${artists.join(", ")}`);
+			console.log(end.join("\n"));
+			if (song.preview_url) {
+				inquirer.prompt([{
+						name: "preview",
+						type: "confirm",
+						message: "Open preview?"
+					}])
+					.then(confirm => {
+						if (confirm.preview)
+							opn(song.preview_url)
+					})
+					.catch(err => console.log(err))
+			}
 		})
 		.catch(err => console.log(err))
 }
 
-switch(mainArg){
-	case "movie-this":
-	case "-m":
-		let movie = (args.length === 0) ? "mr nobody" : args.join(" ");
-		searchMovie(movie);	
-	break;
+console.log();
 
-	case "spotify-this-song":
-	case "-s":
-		let song = (args.length === 0) ? "the sign ace of base" : args.join(" ");
-		searchSong(song);
-	break;
+if (process.argv.length > 2) {
+	let mainArg = process.argv[2];
+	let args = (process.argv.length === 2) ? [] : process.argv.slice(3);
+	switch (mainArg) {
+		case "do-what-it-says":
+		case "-d":
+			fs.readFile("./random.txt", "utf8")
+				.then(data => searchSong(data))
+				.catch(err => console.log(err))
+			break;
+		case "my-tweets":
+		case "-t":
+			break;
+		case "spotify-this-song":
+		case "-s":
+			searchSong((args.length === 0) ? "the sign ace of base" : args);
+			break;
+		case "movie-this":
+		case "-m":
+			searchMovie((args.length === 0) ? "mr nobody" : args.join(" "));
+			break;
+		default:
+			console.log(`
+				You can use an interface if you call 'node liri',
+				Otherwise you can use the list below to run the app 
 
-	case "my-tweets":
-	case "-t":
-	break;
+				Avalible commands:
+				-d    do-what-it-says
+				-t    my-tweets
+				-s    spotify-this-song
+				-m    movie-this
+			`);
+			break;
+	}
+} else {
+	inquirer.prompt([{
+			name: "mainArg",
+			type: "list",
+			message: "Menu",
+			choices: ["movie-this", "spotify-this-song", "my-tweets", "do-what-it-says"]
+		}])
+		.then(response => {
+			console.log();
+			if (response.mainArg === "do-what-it-says" ||
+				response.mainArg === "my-tweets") {
+				switch (response.mainArg) {
+					case "my-tweets":
+						break;
 
-	case "do-what-it-says":
-	case "-d":
-		fs.readFile("./random.txt", "utf8")
-			.then(data => searchSong(data))
-			.catch(err => console.log(err))
-	break;
+					case "do-what-it-says":
+						fs.readFile("./random.txt", "utf8")
+							.then(data => searchSong(data))
+							.catch(err => console.log(err))
+						break;
+				}
+			} else {
+				inquirer.prompt([{
+						name: "args",
+						type: "input",
+						message: "Search",
+					}])
+					.then(name => {
+						console.log("\n\n");
+						switch (response.mainArg) {
+							case "movie-this":
+								searchMovie((name.args.length === 0) ? "mr nobody" : name.args);
+								break;
 
-	default:
-		console.log(`
-			-m movie-this
-			-s spotify-this-song
-			-t my-tweets
-			-d do-what-it-says		
-		`);
-	break;
+							case "spotify-this-song":
+								searchSong((name.args.length === 0) ? "the sign ace of base" : name.args);
+								break;
+						}
+					})
+					.catch(err => console.log(err))
+			}
+		})
+		.catch(err => console.log(err))
 }
