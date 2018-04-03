@@ -7,7 +7,7 @@ let fs = require("fs-extra");
 let inquirer = require("inquirer");
 let opn = require("opn");
 
-function getTweets(){
+function getTweets() {
 	let twitter = new Twitter(keys.twitter);
 
 	let params = {
@@ -57,7 +57,7 @@ function searchSong(name) {
 			let artists = [];
 			song.artists.forEach(value => artists.push(value.name));
 
-			end.push(`Search: ${song.name}`);
+			end.push(`Name: ${song.name}`);
 			end.push(`Album : ${song.album.name}`);
 			end.push(`Artists : ${artists.join(", ")}`);
 			console.log(end.join("\n"));
@@ -65,9 +65,10 @@ function searchSong(name) {
 				inquirer.prompt([{
 						name: "preview",
 						type: "confirm",
-						message: "Open preview?"
+						message: "Open preview?",
+						default: false,
 					}])
-					.then(confirm => {if (confirm.preview) opn(song.preview_url)})
+					.then(confirm => { if (confirm.preview) opn(song.preview_url) })
 					.catch(err => console.log(err))
 			}
 		})
@@ -76,6 +77,7 @@ function searchSong(name) {
 
 console.log();
 
+// if theres arguments, use those
 if (process.argv.length > 2) {
 	let mainArg = process.argv[2];
 	let args = (process.argv.length === 2) ? [] : process.argv.slice(3);
@@ -99,6 +101,7 @@ if (process.argv.length > 2) {
 			searchMovie((args.length === 0) ? "mr nobody" : args.join(" "));
 			break;
 		default:
+			// output help screen
 			console.log(`
 				You can use an interface if you call 'node liri',
 				Otherwise you can use the list below to run the app 
@@ -111,6 +114,7 @@ if (process.argv.length > 2) {
 			`);
 			break;
 	}
+// if no arguments, use inquirer
 } else {
 	inquirer.prompt([{
 			name: "mainArg",
