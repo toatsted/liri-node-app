@@ -53,10 +53,8 @@ function searchSong(name) {
 	spotify.search({ type: 'track', query: name })
 		.then(data => {
 			let song = data.tracks.items[0];
-
 			let artists = [];
 			song.artists.forEach(value => artists.push(value.name));
-
 			end.push(`Name: ${song.name}`);
 			end.push(`Album : ${song.album.name}`);
 			end.push(`Artists : ${artists.join(", ")}`);
@@ -74,7 +72,6 @@ function searchSong(name) {
 		})
 		.catch(err => console.log(err))
 }
-
 console.log();
 
 // if theres arguments, use those
@@ -114,7 +111,7 @@ if (process.argv.length > 2) {
 			`);
 			break;
 	}
-// if no arguments, use inquirer
+	// if no arguments, use inquirer
 } else {
 	inquirer.prompt([{
 			name: "mainArg",
