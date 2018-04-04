@@ -7,20 +7,46 @@ let fs = require("fs-extra");
 let inquirer = require("inquirer");
 let opn = require("opn");
 
-function getTweets() {
-	let twitter = new Twitter(keys.twitter);
+function twitter() {
+	let client = new Twitter(keys.twitter);
 
-	let params = {
-		screen_name: "yesandbutno",
-		count: 20,
-	}
-	twitter.get("statuses/user_timeline", params)
-		.then(tweets => {
-			tweets.forEach(value => {
-				console.log(value.created_at + "\n" + value.text + "\n");
-			})
+	let params = {};
+	inquirer.prompt([{
+		name: "twitterMenu",
+		type: "list",
+		choices: ["Tweet", "Show my tweets"],
+		message: "Twitter: "
+		}])	
+		.then(answer => {
+			if(answer.twitterMenu === "Show my tweets"){
+				params.screen_name = "yesandbutno";
+				params.count = 20;
+				client.get("statuses/user_timeline", params)
+					.then(tweets => {
+						console.log("\n");
+						tweets.forEach(value => {
+							console.log(value.created_at + "\n" + value.text + "\n");
+						})
+					})
+					.catch(err => console.log(err))	
+			} else if(answer.twitterMenu === "Tweet"){
+				inquirer.prompt([{
+					name: "status",
+					type: "input",
+					message: "Tweet: ",
+					}])
+					.then(message => {
+						client.post('statuses/update', message)
+							.then(tweet => {
+								console.log(`You just tweeted '${tweet.text}'`);
+							})
+							.catch(err => console.log(err))
+					})
+			}
 		})
 		.catch(err => console.log(err))
+
+	
 }
 
 function searchMovie(name) {
@@ -87,11 +113,11 @@ if (process.argv.length > 2) {
 			break;
 		case "my-tweets":
 		case "-t":
-			getTweets();
+			twitter();
 			break;
 		case "spotify-this-song":
 		case "-s":
-			searchSong((args.length === 0) ? "the sign ace of base" : args);
+			((arg.length === 0) ? "the sign ace of base" : args);
 			break;
 		case "movie-this":
 		case "-m":
@@ -105,7 +131,7 @@ if (process.argv.length > 2) {
 
 				Avalible commands:
 				-d    do-what-it-says
-				-t    my-tweets
+				-t    twitter
 				-s    spotify-this-song
 				-m    movie-this
 			`);
@@ -117,21 +143,21 @@ if (process.argv.length > 2) {
 			name: "mainArg",
 			type: "list",
 			message: "Menu",
-			choices: ["movie-this", "spotify-this-song", "my-tweets", "do-what-it-says"]
+			choices: ["movie-this", "spotify-this-song", "twitter", "do-what-it-says"]
 		}])
 		.then(response => {
 			console.log();
 			if (response.mainArg === "do-what-it-says" ||
-				response.mainArg === "my-tweets") {
+				response.mainArg === "twitter") {
 				switch (response.mainArg) {
-					case "my-tweets":
-						getTweets();
+					case "twitter":
+						twitter();
 						break;
 
 					case "do-what-it-says":
-						fs.readFile("./random.txt", "utf8")
+						openFile("./random.txt", "utf8")
 							.then(data => searchSong(data))
-							.catch(err => console.log(err))
+							.catch(err => console.log(err));
 						break;
 				}
 			} else {
